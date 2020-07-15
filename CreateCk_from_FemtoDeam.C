@@ -43,7 +43,8 @@ TH1F* add_CF(TH1F* hist_CF1, TH1F* hist_CF2,TString HistName)
 TDirectory* WorkHorse(unsigned uReb, TString Correlation, 
 				//TString NameOutputFolder,TString NameOutputFile,
 				TFile* OutputFile,
-				TString NameInputFolder,TString NameInputFile,TString NameList){
+				TString NameInputFolder,TString NameInputFile,TString NameList,
+				const double NormMin=0,const double NormMax=0){
 
 	TString NamePP;
 	TString NameAPAP;
@@ -67,9 +68,11 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 		return NULL;
 	}
 	
-	const double NormMin=200;
-	const double NormMax=400;
-	
+	//const double NormMin=600;
+	//const double NormMax=900;
+	//const double NormMin=0;
+	//const double NormMax=0;
+		
 	TH1F* hInSE_PP;
 	TH1F* hInME_PP;
 	TH1F* hInSE_APAP;
@@ -106,7 +109,15 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 	TH2F* hMEmult_SUM;
 	TH1F* hCkmult_PP;
 	TH1F* hCkmult_APAP;
+	TH1F* hCkmult_ratio;
 	TH1F* hCkmult_SUM;
+	
+	TH1F* hSEmult1D_PP = new TH1F();
+	TH1F* hMEmult1D_PP = new TH1F();
+	TH1F* hSEmult1D_APAP = new TH1F();
+	TH1F* hMEmult1D_APAP = new TH1F();	
+	TH1F* hSEmult1D_SUM = new TH1F();	
+	TH1F* hMEmult1D_SUM = new TH1F();	
 	
 	//read file
     TFile* InputFile = new TFile(NameInputFolder+NameInputFile,"read");
@@ -125,36 +136,41 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
     hInMEmult_APAP = (TH2F*)lInputAPAP->FindObject(TString::Format("MEMultDist_%s",NameAPAP.Data()));
     
     hInSE_PP->Sumw2();
-    hInSE_PP->Rebin(uReb);
+//printf("BE10 = %f\n",hInSE_PP->GetBinError(20));
+    hInSE_PP->Rebin(uReb);//123 456 789 101112 131415 161718 192021
+//printf(" BE10 = %f\n",hInSE_PP->GetBinError(7));
     hInSE_PP->Scale(1./double(uReb));
-    
-    hInME_PP->Sumw2();
+//printf("  BE10 = %f\n",hInSE_PP->GetBinError(7));
+
+//usleep(1000e3);
+
+	hInME_PP->Sumw2();
     hInME_PP->Rebin(uReb);
-    hInME_PP->Scale(1./double(uReb));    
-    
+    //hInME_PP->Scale(1./double(uReb));  
+      
     hInSE_APAP->Sumw2();
     hInSE_APAP->Rebin(uReb);
-    hInSE_APAP->Scale(1./double(uReb));
+    //hInSE_APAP->Scale(1./double(uReb));
     
     hInME_APAP->Sumw2();
     hInME_APAP->Rebin(uReb);
-    hInME_APAP->Scale(1./double(uReb));   
-    
+    //hInME_APAP->Scale(1./double(uReb));
+
     hInSEmult_PP->Sumw2();
     hInSEmult_PP->Rebin2D(uReb,1);
-    hInSEmult_PP->Scale(1./double(uReb));
+    //hInSEmult_PP->Scale(1./double(uReb));
     
     hInMEmult_PP->Sumw2();
     hInMEmult_PP->Rebin2D(uReb,1);
-    hInMEmult_PP->Scale(1./double(uReb));
+    //hInMEmult_PP->Scale(1./double(uReb));
     
     hInSEmult_APAP->Sumw2();
     hInSEmult_APAP->Rebin2D(uReb,1);
-    hInSEmult_APAP->Scale(1./double(uReb));
+    //hInSEmult_APAP->Scale(1./double(uReb));
     
-    hInMEmult_APAP->Sumw2();
+    hInMEmult_APAP->Sumw2();  
     hInMEmult_APAP->Rebin2D(uReb,1);
-    hInMEmult_APAP->Scale(1./double(uReb));        
+    //hInMEmult_APAP->Scale(1./double(uReb));    
 
 	//copy
 	hSE_PP[0] = new TH1F(	"hSE_PP_Raw","hSE_PP_Raw",
@@ -217,15 +233,19 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 	hSE_PP[1]->Scale(1./hSE_PP[2]->Integral(),"width");
 	hME_PP[1]->Scale(1./hME_PP[2]->Integral(),"width");
 	
+	if(NormMin&&NormMax){
 	hME_PP[2]->Scale(	hSE_PP[2]->Integral(hSE_PP[2]->FindBin(NormMin),hSE_PP[2]->FindBin(NormMax))/
 						hME_PP[2]->Integral(hME_PP[2]->FindBin(NormMin),hME_PP[2]->FindBin(NormMax)));
+	}
+
 	
 	hSE_APAP[1]->Scale(1./hSE_APAP[2]->Integral(),"width");
 	hME_APAP[1]->Scale(1./hME_APAP[2]->Integral(),"width");
 	
+	if(NormMin&&NormMax){
 	hME_APAP[2]->Scale(	hSE_APAP[2]->Integral(hSE_APAP[2]->FindBin(NormMin),hSE_APAP[2]->FindBin(NormMax))/
 						hME_APAP[2]->Integral(hME_APAP[2]->FindBin(NormMin),hME_APAP[2]->FindBin(NormMax)));
-	
+	}
 	
 	//PP and APAP correlations
 	hCk_PP[0] = (TH1F*)hSE_PP[0]->Clone("hCk_PP_Raw");
@@ -325,6 +345,7 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 
 unsigned Bin1 = hCk_SUM->FindBin(NormMin);
 unsigned Bin2 = hCk_SUM->FindBin(NormMax);
+if(NormMin&&NormMax){
 //hCk_PP[0]->Scale(double(Bin2-Bin1+1)/hCk_PP[0]->Integral(Bin1,Bin2));
 //hCk_PP[1]->Scale(double(Bin2-Bin1+1)/hCk_PP[1]->Integral(Bin1,Bin2));
 //hCk_PP[2]->Scale(double(Bin2-Bin1+1)/hCk_PP[2]->Integral(Bin1,Bin2));
@@ -333,6 +354,8 @@ unsigned Bin2 = hCk_SUM->FindBin(NormMax);
 //hCk_APAP[2]->Scale(double(Bin2-Bin1+1)/hCk_APAP[2]->Integral(Bin1,Bin2));
 hCk_WEIGHTED->Scale(double(Bin2-Bin1+1)/hCk_WEIGHTED->Integral(Bin1,Bin2));
 hCk_SUM->Scale(double(Bin2-Bin1+1)/hCk_SUM->Integral(Bin1,Bin2));
+}
+
 TH1F* hADD =  add_CF(hCk_PP[2], hCk_APAP[2],"hADD");
 
 /*
@@ -396,6 +419,8 @@ delete hADD;
 		hInMEmult_APAP->GetYaxis()->GetNbins(),
 		hInMEmult_APAP->GetYaxis()->GetBinLowEdge(1),
 		hInMEmult_APAP->GetYaxis()->GetBinUpEdge(hInMEmult_APAP->GetYaxis()->GetNbins()));
+
+	TH1D* hProjection;
 	
 	for(unsigned uMom=0; uMom<hSEmult_PP->GetXaxis()->GetNbins()+1; uMom++){
 		for(unsigned uMult=0; uMult<hSEmult_PP->GetYaxis()->GetNbins()+1; uMult++){
@@ -405,11 +430,42 @@ delete hADD;
 			hMEmult_APAP->SetBinContent(uMom+1,uMult+1,hInMEmult_APAP->GetBinContent(uMom+1,uMult+1));
 		}
 	}
+	for(unsigned uMult=0; uMult<hSEmult1D_PP->GetNbinsX()+1; uMult++){
+		hProjection = hSEmult_PP->ProjectionY("hProjection",1,hSEmult_PP->GetXaxis()->GetNbins());
+		hSEmult1D_PP = (TH1F*)hProjection->Clone("hSEmult1D_PP");
+		hProjection = hMEmult_PP->ProjectionY("hProjection",1,hMEmult_PP->GetXaxis()->GetNbins());
+		hMEmult1D_PP = (TH1F*)hProjection->Clone("hMEmult1D_PP");
+		
+		hProjection = hSEmult_APAP->ProjectionY("hProjection",1,hSEmult_APAP->GetXaxis()->GetNbins());
+		hSEmult1D_APAP = (TH1F*)hProjection->Clone("hSEmult1D_APAP");
+		hProjection = hMEmult_APAP->ProjectionY("hProjection",1,hMEmult_APAP->GetXaxis()->GetNbins());
+		hMEmult1D_APAP = (TH1F*)hProjection->Clone("hMEmult1D_APAP");			
+	}
+	
+	hSEmult1D_SUM = (TH1F*)hSEmult1D_PP->Clone("hSEmult1D_SUM");
+	hSEmult1D_SUM->Add(hSEmult1D_APAP);
+	
+	hMEmult1D_SUM = (TH1F*)hMEmult1D_PP->Clone("hMEmult1D_SUM");
+	hMEmult1D_SUM->Add(hMEmult1D_APAP);
+	
+	hSEmult1D_PP->Sumw2();
+	hMEmult1D_PP->Sumw2();
+	hSEmult1D_APAP->Sumw2();
+	hMEmult1D_APAP->Sumw2();	
+	hSEmult1D_SUM->Sumw2();
+	hMEmult1D_SUM->Sumw2();
+	
+	hSEmult1D_PP->Scale(1./hSEmult1D_PP->Integral(),"width");
+	hMEmult1D_PP->Scale(1./hMEmult1D_PP->Integral(),"width");
+	hSEmult1D_APAP->Scale(1./hSEmult1D_APAP->Integral(),"width");
+	hMEmult1D_APAP->Scale(1./hMEmult1D_APAP->Integral(),"width");
+	hSEmult1D_SUM->Scale(1./hSEmult1D_SUM->Integral(),"width");
+	hMEmult1D_SUM->Scale(1./hMEmult1D_SUM->Integral(),"width");
 
-	hSEmult_PP->Sumw2();
-	hMEmult_PP->Sumw2();
-	hSEmult_APAP->Sumw2();
-	hMEmult_APAP->Sumw2();
+	//hSEmult_PP->Sumw2();
+	//hMEmult_PP->Sumw2();
+	//hSEmult_APAP->Sumw2();
+	//hMEmult_APAP->Sumw2();
 
 	//norm
 	//note, due to a bug, the last real bin in mult is the overflow bin
@@ -500,7 +556,7 @@ delete hADD;
 	//now we compute all correlation functions
 	TH1F* hTemp_SE;
 	TH1F* hTemp_ME;
-	TH1D* hProjection;
+	
 	
 	//
 	hProjection = hSEmult_PP->ProjectionX("hProjection",1,1);
@@ -579,10 +635,15 @@ delete hADD;
 	hCkmult_SUM->Divide(hTemp_ME);
 	delete hTemp_SE;
 	delete hTemp_ME;
-	
+
+if(NormMin&&NormMax){
 hCkmult_PP->Scale(double(Bin2-Bin1+1)/hCkmult_PP->Integral(Bin1,Bin2));
 hCkmult_APAP->Scale(double(Bin2-Bin1+1)/hCkmult_APAP->Integral(Bin1,Bin2));
 hCkmult_SUM->Scale(double(Bin2-Bin1+1)/hCkmult_SUM->Integral(Bin1,Bin2));
+}
+
+	hCkmult_ratio = (TH1F*)hCkmult_PP->Clone("hCkmult_ratio");
+	hCkmult_ratio->Divide(hCkmult_APAP);
 
 /*
 	TFile* OutputFile = new TFile(NameOutputFolder+NameOutputFile,"recreate");
@@ -633,7 +694,13 @@ delete hADD;
 	OutputDir->Add(hSE_SUM);
 	OutputDir->Add(hME_SUM);
 	OutputDir->Add(hCk_SUM);
-
+	
+	OutputDir->Add(hSEmult1D_PP);
+	OutputDir->Add(hMEmult1D_PP);
+	OutputDir->Add(hSEmult1D_APAP);
+	OutputDir->Add(hMEmult1D_APAP);
+	OutputDir->Add(hSEmult1D_SUM);
+	OutputDir->Add(hMEmult1D_SUM);	
 	OutputDir->Add(hSEmult_PP);
 	OutputDir->Add(hMEmult_PP);
 	OutputDir->Add(hSEmult_APAP);
@@ -642,6 +709,7 @@ delete hADD;
 	OutputDir->Add(hMEmult_SUM);
 	OutputDir->Add(hCkmult_PP);
 	OutputDir->Add(hCkmult_APAP);
+	OutputDir->Add(hCkmult_ratio);
 	OutputDir->Add(hCkmult_SUM);
 /*
 	//delete
@@ -676,66 +744,165 @@ delete hADD;
 	delete hMEmult_APAP;
 	delete hSEmult_SUM;
 	delete hMEmult_SUM;
-
+	
+	delete hSEmult1D_PP;
+	delete hMEmult1D_PP;
+	delete hSEmult1D_APAP;
+	delete hMEmult1D_APAP;
+	delete hSEmult1D_SUM;
+	delete hMEmult1D_SUM;
+	
 	delete InputFile;
 	//delete OutputFile;
 */
 	return OutputDir;
 }
 
-void CreateCk_from_FemtoDeam(){
 
-	//pp, pL, pXim, LL
-	//TString Correlation = "pp";
-	//TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/CorrelationsDimi2020/";
-	//TString NameOutputFile = "CkDimi2020_pp.root";
-	//TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
-	//TString NameInputFile = "AnalysisResults.root";
-	//TString NameList = "HMResults";
-/*
 
+void Vale1_Main(TString Correlation, TString NameOutputFolder,TString NameOutputFile, 
+				TString NameInputFolder,TString NameInputFile,TString NameList,
+				const double NormMin=0, const double NormMax=0){
+	const unsigned NumReb = 6;
+	TFile* OutputFile = new TFile(NameOutputFolder+NameOutputFile,"recreate");
+	TDirectory** dOutput = new TDirectory* [NumReb];
+	
+	for(unsigned uReb=0; uReb<NumReb; uReb++){
+		printf("uReb=%u\n",uReb);
+		if(uReb==NumReb-1) uReb = 9;
+		dOutput[uReb] = WorkHorse(uReb+1,Correlation,OutputFile,
+						NameInputFolder,NameInputFile,NameList,NormMin,NormMax);
+		dOutput[uReb]->ls();
+		OutputFile->cd();
+		dOutput[uReb]->Write();
+	}
+	
+	for(unsigned uReb=0; uReb<NumReb; uReb++){
+		delete dOutput[uReb];
+	}
+	delete [] dOutput;
+	delete OutputFile;	
+}
+
+void UREB_Main(TString Correlation, TString NameOutputFolder,TString NameOutputFile, 
+				TString NameInputFolder,TString NameInputFile,TString NameList, 
+				const unsigned* UREB, const unsigned NumReb,
+				const double NormMin=0, const double NormMax=0){
+	TFile* OutputFile = new TFile(NameOutputFolder+NameOutputFile,"recreate");
+	TDirectory** dOutput = new TDirectory* [NumReb];
+	
+	for(unsigned uReb=0; uReb<NumReb; uReb++){
+		if(!UREB[uReb]) continue;
+		dOutput[uReb] = WorkHorse(UREB[uReb],Correlation,OutputFile,
+						NameInputFolder,NameInputFile,NameList,NormMin,NormMax);
+		dOutput[uReb]->ls();
+		OutputFile->cd();
+		dOutput[uReb]->Write();
+	}
+	
+	for(unsigned uReb=0; uReb<NumReb; uReb++){
+		delete dOutput[uReb];
+	}
+	delete [] dOutput;
+	delete OutputFile;	
+}
+
+
+//the original data set that I was using
+void CutVariations_Signal(){
+	
 	TString Correlation = "pL";
-	TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";
-	TString NameOutputFile = "CkDimi2020_pL.root";
-	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
 	TString NameInputFile = "AnalysisResults.root";
-	TString NameList = "HMResults";
+	const unsigned NumVars = 1;//45
+	for(unsigned uVar=0; uVar<NumVars; uVar++){
+		TString NameInputFolder;
+		TString NameOutputFile;
+		TString NameList;
+		TString NameOutputFolder;
+		if(!uVar){
+			NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
+			//NameOutputFile = TString::Format("Ck_pL_%u.root",uVar);
+			NameOutputFile = TString::Format("CkREW_pL_%u.root",uVar);
+			NameList = "HMResults";
+		}
+		else{
+			NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample12HM/";
+			//NameOutputFile = TString::Format("Ck_pL_%u.root",uVar);
+			NameOutputFile = TString::Format("CkREW_pL_%u.root",uVar);
+			NameList = TString::Format("HMResults%u",uVar);
+		}
+		NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/DataSignal/";
+		Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+		NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm240_340/DataSignal/";
+		Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,240,340);					
+	}
+}
 
-	TString Correlation = "pL";
-	TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";
-	TString NameOutputFile = "CkSidebands09062020_SL1_pL.root";
-	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
-	TString NameInputFile = "AnalysisResults_Sidebands09062020.root";
-	TString NameList = "HMDimiResultsSL1";
 
+void Vale1_SR1(){
 	TString Correlation = "pL";
-	TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";
-	TString NameOutputFile = "CkSidebands09062020_SL2_pL.root";
-	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
-	TString NameInputFile = "AnalysisResults_Sidebands09062020.root";
-	TString NameList = "HMDimiResultsSL2";
-
-	TString Correlation = "pL";
-	TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";
+	TString NameOutputFolder;
 	TString NameOutputFile = "CkSidebands09062020_SR1_pL.root";
 	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
 	TString NameInputFile = "AnalysisResults_Sidebands09062020.root";
 	TString NameList = "HMDimiResultsSR1";
-
-
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+	
+}
+void Vale1_SR2(){
 	TString Correlation = "pL";
-	TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";
+	TString NameOutputFolder;
 	TString NameOutputFile = "CkSidebands09062020_SR2_pL.root";
 	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
 	TString NameInputFile = "AnalysisResults_Sidebands09062020.root";
 	TString NameList = "HMDimiResultsSR2";
-*/
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+}
+void Vale1_SL1(){
 	TString Correlation = "pL";
-	TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";
-	TString NameOutputFile = "CkDimi2020_pL.root";
-	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
-	TString NameInputFile = "AnalysisResults.root";
-	TString NameList = "HMResults";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SL1_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults_Sidebands09062020.root";
+	TString NameList = "HMDimiResultsSL1";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+}
+void Vale1_SL2(){
+	TString Correlation = "pL";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SL2_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults_Sidebands09062020.root";
+	TString NameList = "HMDimiResultsSL2";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+		
+	/*
 	const unsigned NumReb = 5;
 	TFile* OutputFile = new TFile(NameOutputFolder+NameOutputFile,"recreate");
 	TDirectory** dOutput = new TDirectory* [NumReb];
@@ -753,6 +920,168 @@ void CreateCk_from_FemtoDeam(){
 		delete dOutput[uReb];
 	}
 	delete [] dOutput;
-	delete OutputFile;
+	delete OutputFile;	
+	*/
+}
+
+
+void Vale1_SL3(){
+	TString Correlation = "pL";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SL3_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults190620_SL_34_SR3.root";
+	TString NameList = "HMDimiResultsSL3";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+	
+}
+void Vale1_SL4(){
+	TString Correlation = "pL";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SL4_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults190620_SL_34_SR3.root";
+	TString NameList = "HMDimiResultsSL4";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+	
+}
+void Vale1_SR3(){
+	TString Correlation = "pL";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SR3_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults190620_SL_34_SR3.root";
+	TString NameList = "HMDimiResultsSR3";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+	
+}
+void Vale1_SR4(){
+	TString Correlation = "pL";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SR4_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults190620_SR456.root";
+	TString NameList = "HMDimiResultsSR4";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+	
+}
+void Vale1_SR5(){
+	TString Correlation = "pL";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SR5_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults190620_SR456.root";
+	TString NameList = "HMDimiResultsSR5";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+	
+}
+void Vale1_SR6(){
+	TString Correlation = "pL";
+	TString NameOutputFolder;
+	TString NameOutputFile = "CkSidebands09062020_SR6_pL.root";
+	TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles_Dimi/pLambda/";	
+	TString NameInputFile = "AnalysisResults190620_SR456.root";
+	TString NameList = "HMDimiResultsSR6";
+	
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+	NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm700_1000/SideBands/";
+	Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,700,1000);
+	
+}
+
+void CompareDataMC(){
+	
+	TString Correlation = "pL";
+	
+	TString NameInputFile;
+	TString NameInputFolder;
+	TString NameOutputFile;
+	TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm240_340/CompareDataMC/";
+	TString NameList;
+
+	unsigned UREB[5];
+	unsigned NumReb = 5;
+	UREB[0] = 3;//12 MeV
+	UREB[1] = 5;//20 MeV
+	UREB[2] = 10;//40 MeV
+	UREB[3] = 15;//60 MeV
+	UREB[4] = 20;//80 MeV
+	
+	NameInputFile = "AnalysisResults.root";
+	NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
+	NameOutputFile = TString::Format("Ck_pL_Data.root");
+	NameList = "HMResults";
+	
+	UREB_Main(	Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,UREB,NumReb,240,340);
+				
+	NameInputFile = "AnalysisResults.root";
+	NameInputFolder = "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/CorrelationFiles_2018/pp13TeV_HM_Baseline/MyResults_Vale/MC/AnalysisResults/AOD_Trains/";
+	NameOutputFile = TString::Format("Ck_pL_Mc.root");
+	NameList = "HMResults8";
+	
+	UREB_Main(	Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,UREB,NumReb,240,340);	
+				
+					
+}
+
+void CreateCk_from_FemtoDeam(){
+
+	//pp, pL, pXim, LL
+	//TString Correlation = "pp";
+	//TString NameOutputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/CorrelationsDimi2020/";
+	//TString NameOutputFile = "CkDimi2020_pp.root";
+	//TString NameInputFolder = "/home/dmihaylov/CernBox/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
+	//TString NameInputFile = "AnalysisResults.root";
+	//TString NameList = "HMResults";
+	
+	//Vale1_SL1();//1080-1103 ANplot
+	//Vale1_SL2();//1185-1103 
+	//Vale1_SL3();//1190-1103 ANplot
+	//Vale1_SL4();//1095-1108 ANplot
+	//Vale1_SR1();//1129-1155 ANplot
+	//Vale1_SR2();//1129-1200 ANplot??
+	//Vale1_SR3();//1129-1145 ANplot
+	//Vale1_SR4();//1129-1140 
+	//Vale1_SR5();//1124-1140 ANplot
+	//Vale1_SR6();//1124-1135 ANplot
+	
+	CutVariations_Signal();
+	
+	//CompareDataMC();
 	
 }
