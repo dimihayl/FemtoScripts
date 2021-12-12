@@ -111,6 +111,8 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 	TH1F* hCkmult_APAP;
 	TH1F* hCkmult_ratio;
 	TH1F* hCkmult_SUM;
+  TH1F* hSEmultFinal_SUM;
+  TH1F* hMEmultFinal_SUM;
 
 	TH1F* hSEmult1D_PP = new TH1F();
 	TH1F* hMEmult1D_PP = new TH1F();
@@ -422,6 +424,7 @@ delete hADD;
 
 	TH1D* hProjection;
 
+//the 2D SE and ME mult dist
 	for(unsigned uMom=0; uMom<hSEmult_PP->GetXaxis()->GetNbins()+1; uMom++){
 		for(unsigned uMult=0; uMult<hSEmult_PP->GetYaxis()->GetNbins()+1; uMult++){
 			hSEmult_PP->SetBinContent(uMom+1,uMult+1,hInSEmult_PP->GetBinContent(uMom+1,uMult+1));
@@ -430,7 +433,9 @@ delete hADD;
 			hMEmult_APAP->SetBinContent(uMom+1,uMult+1,hInMEmult_APAP->GetBinContent(uMom+1,uMult+1));
 		}
 	}
-	for(unsigned uMult=0; uMult<hSEmult1D_PP->GetNbinsX()+1; uMult++){
+
+
+	//for(unsigned uMult=0; uMult<hSEmult1D_PP->GetNbinsX()+1; uMult++){
 		hProjection = hSEmult_PP->ProjectionY("hProjection",1,hSEmult_PP->GetXaxis()->GetNbins());
 		hSEmult1D_PP = (TH1F*)hProjection->Clone("hSEmult1D_PP");
 		hProjection = hMEmult_PP->ProjectionY("hProjection",1,hMEmult_PP->GetXaxis()->GetNbins());
@@ -440,8 +445,9 @@ delete hADD;
 		hSEmult1D_APAP = (TH1F*)hProjection->Clone("hSEmult1D_APAP");
 		hProjection = hMEmult_APAP->ProjectionY("hProjection",1,hMEmult_APAP->GetXaxis()->GetNbins());
 		hMEmult1D_APAP = (TH1F*)hProjection->Clone("hMEmult1D_APAP");
-	}
+	//}
 
+//here added up for PP and APAP
 	hSEmult1D_SUM = (TH1F*)hSEmult1D_PP->Clone("hSEmult1D_SUM");
 	hSEmult1D_SUM->Add(hSEmult1D_APAP);
 
@@ -455,6 +461,7 @@ delete hADD;
 	hSEmult1D_SUM->Sumw2();
 	hMEmult1D_SUM->Sumw2();
 
+//we normalize the distributions over the multiplicity
 	hSEmult1D_PP->Scale(1./hSEmult1D_PP->Integral(),"width");
 	hMEmult1D_PP->Scale(1./hMEmult1D_PP->Integral(),"width");
 	hSEmult1D_APAP->Scale(1./hSEmult1D_APAP->Integral(),"width");
@@ -480,10 +487,14 @@ delete hADD;
 	double Weight_APAP=0;
 	//norm hSEmult_PP and hSEmult_APAP
 	for(unsigned uMult=0; uMult<NumMultBins+1; uMult++){
+    //for each mult bin, we calculare the integral from k* 0 to infty
 		Integral = hSEmult_PP->Integral(0,hSEmult_PP->GetXaxis()->GetNbins()+1,uMult+1,uMult+1);
+    //we keep track what is the fraction of PP
 		Weight_PP += Integral;
+    //this serves as weight of how much entries we have in this mult bin
 		mult_weight_PP->SetBinContent(uMult+1,Integral);
 		for(unsigned uMom=0; uMom<hSEmult_PP->GetXaxis()->GetNbins()+1; uMom++){
+      //we normalize the yield to unity in each mult bin
 			if(Integral){
 				hSEmult_PP->SetBinContent(uMom+1,uMult+1,hSEmult_PP->GetBinContent(uMom+1,uMult+1)/Integral);
 				hSEmult_PP->SetBinError(uMom+1,uMult+1,hSEmult_PP->GetBinError(uMom+1,uMult+1)/Integral);
@@ -494,6 +505,7 @@ delete hADD;
 			}
 		}
 
+    //we also normalize to unity the yield in each mult bin of the ME
 		Integral = hMEmult_PP->Integral(0,hMEmult_PP->GetXaxis()->GetNbins()+1,uMult+1,uMult+1);
 		for(unsigned uMom=0; uMom<hMEmult_PP->GetXaxis()->GetNbins()+1; uMom++){
 			if(Integral){
@@ -506,6 +518,7 @@ delete hADD;
 			}
 		}
 
+    //the exact same procedure is repeated for APAP
 		Integral = hSEmult_APAP->Integral(0,hSEmult_APAP->GetXaxis()->GetNbins()+1,uMult+1,uMult+1);
 		Weight_APAP += Integral;
 		mult_weight_APAP->SetBinContent(uMult+1,Integral);
@@ -534,6 +547,7 @@ delete hADD;
 	}
 
 	//first add the yields for PP and APAP, than normalize
+  //i.e. we will get, based on the SE, what is the weight of each mult bin for the whole sample
 	mult_weight_SUM = (TH1F*)mult_weight_PP->Clone("mult_weight_SUM");
 	mult_weight_SUM->Add(mult_weight_APAP);
 	mult_weight_SUM->Scale(1./mult_weight_SUM->Integral());
@@ -545,6 +559,10 @@ delete hADD;
 	Weight_APAP = 1.-Weight_PP;
 
 	//sum up PP and APAP (they are normed here)
+  //the resulting 2D distributions are the SE/ME samples,
+  //normalized to unity in each mult bin and correctly summed up for PP and APAP,
+  //where we have used the weights based on the number of particles (original yield)
+  //this is equvilent to the direct sum of SE or ME
 	hSEmult_SUM = (TH2F*)hSEmult_PP->Clone("hSEmult_SUM");
 	hSEmult_SUM->Scale(Weight_PP);
 	hSEmult_SUM->Add(hSEmult_APAP,Weight_APAP);
@@ -558,7 +576,10 @@ delete hADD;
 	TH1F* hTemp_ME;
 
 
-	//
+	//to the SE event (later also for ME) we get the distribution in one mult bin
+  //and scale it by the correponding weight. Since the weight is taken from the SE
+  //the overall SE distribution will not differ from the original (apart normalization)
+  //the ME will though!
 	hProjection = hSEmult_PP->ProjectionX("hProjection",1,1);
 	hTemp_SE = (TH1F*)hProjection->Clone("hTemp_SE");
 	hTemp_SE->Scale(mult_weight_PP->GetBinContent(1));
@@ -631,6 +652,10 @@ delete hADD;
 		delete hProjection;
 	}
 
+  hSEmultFinal_SUM = (TH1F*)hTemp_SE->Clone("hSEmultFinal_SUM");
+  hSEmultFinal_SUM->Scale(1./hSEmultFinal_SUM->Integral(),"width");
+  hMEmultFinal_SUM = (TH1F*)hTemp_ME->Clone("hMEmultFinal_SUM");
+  hMEmultFinal_SUM->Scale(1./hMEmultFinal_SUM->Integral(),"width");
 	hCkmult_SUM = (TH1F*)hTemp_SE->Clone("hCkmult_SUM");
 	hCkmult_SUM->Divide(hTemp_ME);
 	delete hTemp_SE;
@@ -710,6 +735,8 @@ delete hADD;
 	OutputDir->Add(hCkmult_PP);
 	OutputDir->Add(hCkmult_APAP);
 	OutputDir->Add(hCkmult_ratio);
+  OutputDir->Add(hSEmultFinal_SUM);
+  OutputDir->Add(hMEmultFinal_SUM);
 	OutputDir->Add(hCkmult_SUM);
 /*
 	//delete
@@ -783,6 +810,30 @@ void Vale1_Main(TString Correlation, TString NameOutputFolder,TString NameOutput
 	delete OutputFile;
 }
 
+void Main_CustomRebin(TString Correlation, TString NameOutputFolder,TString NameOutputFile,
+				TString NameInputFolder,TString NameInputFile,TString NameList,
+				const double NormMin, const double NormMax, std::vector<unsigned>& REB){
+	TFile* OutputFile = new TFile(NameOutputFolder+NameOutputFile,"recreate");
+	TDirectory** dOutput = new TDirectory* [REB.size()];
+
+  unsigned Element=0;
+	for(unsigned uReb : REB){
+		printf("uReb=%u\n",uReb);
+		dOutput[Element] = WorkHorse(uReb+1,Correlation,OutputFile,
+						NameInputFolder,NameInputFile,NameList,NormMin,NormMax);
+		dOutput[Element]->ls();
+		OutputFile->cd();
+		dOutput[Element]->Write();
+    Element++;
+	}
+
+	for(unsigned uReb=0; uReb<REB.size(); uReb++){
+		delete dOutput[uReb];
+	}
+	delete [] dOutput;
+	delete OutputFile;
+}
+
 void UREB_Main(TString Correlation, TString NameOutputFolder,TString NameOutputFile,
 				TString NameInputFolder,TString NameInputFile,TString NameList,
 				const unsigned* UREB, const unsigned NumReb,
@@ -839,6 +890,72 @@ void CutVariations_Signal(){
 	}
 }
 
+//the improved version with extra info on the SE/ME reweighted. Used for the resubmission to PRL
+void CutVariations_Signal_2(){
+
+	TString Correlation = "pL";
+	TString NameInputFile = "AnalysisResults.root";
+	const unsigned NumVars = 45;//45
+	for(unsigned uVar=0; uVar<NumVars; uVar++){
+		TString NameInputFolder;
+		TString NameOutputFile;
+		TString NameList;
+		TString NameOutputFolder;
+		if(!uVar){
+			NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
+			//NameOutputFile = TString::Format("Ck_pL_%u.root",uVar);
+			NameOutputFile = TString::Format("CkREW_pL_%u.root",uVar);
+			NameList = "HMResults";
+		}
+		else{
+			NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample12HM/";
+			//NameOutputFile = TString::Format("Ck_pL_%u.root",uVar);
+			NameOutputFile = TString::Format("CkREW_pL_%u.root",uVar);
+			NameList = TString::Format("HMResults%u",uVar);
+		}
+		NameOutputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/NormTotYield/DataSignal/";
+		Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList);
+		NameOutputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm240_340/DataSignal/";
+		Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,240,340);
+	}
+}
+
+void BabyLaura(){
+
+	TString Correlation = "pL";
+	TString NameInputFile = "AnalysisResults.root";
+	const unsigned NumVars = 2;//45
+	for(unsigned uVar=0; uVar<NumVars; uVar++){
+		TString NameInputFolder;
+		TString NameOutputFile;
+		TString NameList;
+		TString NameOutputFolder;
+    std::vector<unsigned> REB;
+		if(uVar==0){
+			NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/BabyLaura/";
+			NameOutputFile = TString::Format("CkBabyLaura_pL.root");
+			NameList = "PLResults0";
+      REB.push_back(3);
+      REB.push_back(11);
+		}
+    else{
+      NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
+      NameOutputFile = TString::Format("CkDimiNEW_pL.root");
+      NameList = "HMResults";
+      REB.push_back(0);
+      REB.push_back(2);
+    }
+		//NameOutputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/BabyLaura";
+		//Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+		//		NameInputFolder,NameInputFile,NameList);
+
+		NameOutputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/BabyLaura/";
+		Main_CustomRebin(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,240,340,REB);
+	}
+}
 
 void Vale1_SR1(){
 	TString Correlation = "pL";
@@ -1127,9 +1244,11 @@ void CreateCk_from_FemtoDeam(){
 	//Vale1_SR6();//1124-1135 ANplot
 
 	//CutVariations_Signal();
-  Study_CPA();
+  //CutVariations_Signal_2();
+  //Study_CPA();
   //Study_V0d("S2p5");
   //Study_V0d("S4");
+  BabyLaura();
 
 	//CompareDataMC();
 
