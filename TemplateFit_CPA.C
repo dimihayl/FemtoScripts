@@ -41,7 +41,7 @@ gStyle->SetOptStat(0);
 //get templates
 //"hm" 5% andi analysis, lhc16
 ///MC file
-TFile *_file0 = TFile::Open("$CERN_BOX/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/AnalysisResultsMC.root");
+TFile *_file0 = TFile::Open("$CERNBOX_DIMI/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/AnalysisResultsMC.root");
 TDirectory *d_0 = (TDirectory*) _file0->Get("MBv0CutsMC5");
 TList *l_0 = (TList*) d_0->Get("MBv0CutsMC5");
 TList *ll_0 = (TList*) l_0->FindObject("v0MonteCarlo");
@@ -68,7 +68,7 @@ DCAPtBinningCont->Add(antiDCAPtBinningCont);
 //get data
 //TFile *_file1 = TFile::Open("250251252.root");
 ///DATA file original
-TFile *_file1 = TFile::Open("$CERN_BOX/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/AnalysisResults.root");
+TFile *_file1 = TFile::Open("$CERNBOX_DIMI/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/AnalysisResults.root");
 //TString cuts = "HM_NEWCUTS2";
 
 //add protons and antiplrotons
@@ -105,7 +105,7 @@ DCAXYPtMult_55_inf_1->Add(DCAXYPtMult_55_inf_2);
 pTDist_after_1->Add(pTDist_after_2);
 
 
-TFile* fOut = new TFile("./Output/TemplateFit_CPA.root","recreate");
+TFile* fOut = new TFile("$FEMTO_OUTPUT/Scripts/TemplateFit_CPA.root","recreate");
 
 //which to use?
 //tot

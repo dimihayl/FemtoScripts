@@ -10,7 +10,7 @@ void TemplatePlot_CPA(){
 	double ZoomedMinRange = 0.99;
 	double ZoomedMaxRange = 1.0;
 
-	TString InputFileName = "fOut.root";
+	TString InputFileName = "$FEMTO_OUTPUT/Scripts/TemplateFit_CPA.root";
 
 	//in the last bin, we add all of them up
 	TH1F** pri = new TH1F* [Num_pT_bins+1];
@@ -78,7 +78,7 @@ void TemplatePlot_CPA(){
 
 	}
 
-	TFile* fOutPlot = new TFile("fOutPlot.root","recreate");
+	TFile* fOutPlot = new TFile("$FEMTO_OUTPUT/Scripts/fOutDcaPlot.root","recreate");
 
 	TGraph* gpri = new TGraph [Num_pT_bins+1];
 	TGraph* gmat = new TGraph [Num_pT_bins+1];
@@ -203,13 +203,13 @@ void TemplatePlot_CPA(){
 
 	TPaveText** PT1 = new TPaveText*[Num_pT_bins];
 	for(int ipT=0;ipT<Num_pT_bins;ipT++){
-		PT1[ipT] = new TPaveText(0.2,0.75,0.6,0.875, "blNDC");//lbrt
+		PT1[ipT] = new TPaveText(0.2,0.725,0.65,0.875, "blNDC");//lbrt
 		PT1[ipT]->SetName(TString::Format("PT1_%i",ipT));
 		PT1[ipT]->SetBorderSize(1);
-		PT1[ipT]->SetTextSize(0.07);
+		PT1[ipT]->SetTextSize(0.090);
 		PT1[ipT]->SetFillColor(kWhite);
 		PT1[ipT]->SetTextFont(22);
-		PT1[ipT]->AddText(TString::Format("p_{T}#in[%.1f, %.1f] GeV",pT_Weights->GetXaxis()->GetBinLowEdge(ipT+1),pT_Weights->GetXaxis()->GetBinUpEdge(ipT+1)));
+		PT1[ipT]->AddText(TString::Format("#it{p}_{T}#in[%.1f, %.1f] GeV/#it{c}",pT_Weights->GetXaxis()->GetBinLowEdge(ipT+1),pT_Weights->GetXaxis()->GetBinUpEdge(ipT+1)));
 	}
 
 
@@ -222,7 +222,7 @@ void TemplatePlot_CPA(){
 	cAll->cd(1);
     TLegend* LegendAll = new TLegend(0.1,0.1,0.9,0.9);//lbrt
     LegendAll->SetName(TString::Format("LegendAll"));
-    LegendAll->SetTextSize(0.08);
+    LegendAll->SetTextSize(0.090);
     LegendAll->AddEntry(pri[0],"Primary (#Lambda or #Sigma^{0}#rightarrow#Lambda)");
     LegendAll->AddEntry(sec[0],"Secondary (#Xi#rightarrow#Lambda)");
     LegendAll->AddEntry(mat[0],"Material #Lambda");
@@ -237,17 +237,17 @@ void TemplatePlot_CPA(){
 		cAll->cd(ipT+2)->SetMargin(0.15,0.05,0.2,0.05);//lrbt
 		mat[ipT]->SetStats(false);
 		mat[ipT]->SetTitle("");
-		mat[ipT]->GetXaxis()->SetLabelSize(0.08);
+		mat[ipT]->GetXaxis()->SetLabelSize(0.090);
 		mat[ipT]->GetXaxis()->SetTitle("cos(#alpha)");
 		mat[ipT]->GetXaxis()->CenterTitle();
 		mat[ipT]->GetXaxis()->SetTitleOffset(1.2);
 		mat[ipT]->GetXaxis()->SetLabelOffset(0.02);
-		mat[ipT]->GetXaxis()->SetTitleSize(0.08);
-		mat[ipT]->GetYaxis()->SetLabelSize(0.08);
+		mat[ipT]->GetXaxis()->SetTitleSize(0.090);
+		mat[ipT]->GetYaxis()->SetLabelSize(0.090);
 		mat[ipT]->GetYaxis()->SetTitle("dN/N");
 		mat[ipT]->GetYaxis()->CenterTitle();
-		mat[ipT]->GetYaxis()->SetTitleOffset(1.00);
-		mat[ipT]->GetYaxis()->SetTitleSize(0.08);
+		mat[ipT]->GetYaxis()->SetTitleOffset(0.90);
+		mat[ipT]->GetYaxis()->SetTitleSize(0.090);
 
 		mat[ipT]->GetYaxis()->SetRangeUser(1e-6,0.5);
 		mat[ipT]->GetXaxis()->SetNdivisions(506);
@@ -263,7 +263,7 @@ void TemplatePlot_CPA(){
 	}
 
 	gStyle->SetLineWidth(2.5);
-	cAll->SaveAs("TemplateFitsCPA.png");
+	cAll->SaveAs("$FEMTO_OUTPUT/Scripts/TemplateFitsCPA.png");
 	gStyle->SetLineWidth(1);
 	for(int ipT=0;ipT<Num_pT_bins;ipT++){
 		pri[ipT]->SetLineWidth(pri[ipT]->GetLineWidth()/2.5);
@@ -273,7 +273,7 @@ void TemplatePlot_CPA(){
 		htot[ipT]->SetLineWidth(htot[ipT]->GetLineWidth()/2.5);
 		data[ipT]->SetLineWidth(data[ipT]->GetLineWidth()/2.5);
 	}
-	cAll->SaveAs("TemplateFitsCPA.pdf");
+	cAll->SaveAs("$FEMTO_OUTPUT/Scripts/TemplateFitsCPA.pdf");
 	gStyle->SetLineWidth(2.5);
 	for(int ipT=0;ipT<Num_pT_bins;ipT++){
 		pri[ipT]->SetLineWidth(pri[ipT]->GetLineWidth()*2.5);
@@ -335,7 +335,7 @@ void TemplatePlot_CPA(){
 	data[Num_pT_bins]->Draw("same");
 	LegendTot->Draw("same");
 
-	cTot->SaveAs("TemplateFitCPA.png");
+	cTot->SaveAs("$FEMTO_OUTPUT/Scripts/TemplateFitCPA.png");
 	gStyle->SetLineWidth(1);
 
 	pri[Num_pT_bins]->SetLineWidth(pri[Num_pT_bins]->GetLineWidth()/2.5);
@@ -345,7 +345,7 @@ void TemplatePlot_CPA(){
 	htot[Num_pT_bins]->SetLineWidth(htot[Num_pT_bins]->GetLineWidth()/2.5);
 	data[Num_pT_bins]->SetLineWidth(data[Num_pT_bins]->GetLineWidth()/2.5);
 
-	cTot->SaveAs("TemplateFitCPA.pdf");
+	cTot->SaveAs("$FEMTO_OUTPUT/Scripts/TemplateFitCPA.pdf");
 	gStyle->SetLineWidth(2.5);
 	pri[Num_pT_bins]->SetLineWidth(pri[Num_pT_bins]->GetLineWidth()*2.5);
 	mat[Num_pT_bins]->SetLineWidth(mat[Num_pT_bins]->GetLineWidth()*2.5);
@@ -453,11 +453,11 @@ void TemplatePlot_CPA(){
 	primAvg->Draw("same");
 	LegendFrac->Draw("same");
 
-	cpT->SaveAs("pT_Distribution.png");
+	cpT->SaveAs("$FEMTO_OUTPUT/Scripts/pT_Distribution.png");
 	gStyle->SetLineWidth(1);
 	pT_Dist->SetLineWidth(pT_Dist->GetLineWidth()/2.5);
 	primAvg->SetLineWidth(primAvg->GetLineWidth()/2.5);
-	cpT->SaveAs("pT_Distribution.pdf");
+	cpT->SaveAs("$FEMTO_OUTPUT/Scripts/pT_Distribution.pdf");
 	gStyle->SetLineWidth(2.5);
 	pT_Dist->SetLineWidth(pT_Dist->GetLineWidth()*2.5);
 	primAvg->SetLineWidth(primAvg->GetLineWidth()*2.5);

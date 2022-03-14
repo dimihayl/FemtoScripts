@@ -2,16 +2,20 @@
 void Create_pL_Ck(){
 
   const unsigned Rebin = 3;
+  //you can get that folder here:
+  //https://cernbox.cern.ch/index.php/s/gZpIT70CUaJuZeL
   TString FolderName = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/FemtoIntro/";
   TString FileName_PP_S = FolderName+"hPP_S.root";
   TString FileName_PP_R = FolderName+"hPP_R.root";
   TString FileName_AA_S = FolderName+"hAA_S.root";
   TString FileName_AA_R = FolderName+"hAA_R.root";
+  TString FileName_GF = FolderName+"GentleFemto.root";
 
   TString HistoName_PP_S = "SEMultDist_Particle0_Particle2";
   TString HistoName_PP_R = "MEMultDist_Particle0_Particle2";
   TString HistoName_AA_S = "SEMultDist_Particle1_Particle3";
   TString HistoName_AA_R = "MEMultDist_Particle1_Particle3";
+  TString HistoName_GF = "hCk_Reweighted_2";
 
   TFile* fInput_PP_S = new TFile(FileName_PP_S,"read");
   TH2F* hPP_S = (TH2F*)fInput_PP_S->Get(HistoName_PP_S);
@@ -28,6 +32,9 @@ void Create_pL_Ck(){
   TFile* fInput_AA_R = new TFile(FileName_AA_R,"read");
   TH2F* hAA_R = (TH2F*)fInput_AA_R->Get(HistoName_AA_R);
   hAA_R->Rebin2D(Rebin,1);
+
+  TFile* fInput_GF = new TFile(FileName_GF,"read");
+  TH1F* hGF = (TH1F*)fInput_GF->Get(HistoName_GF);
 
   const unsigned NumKstarBins = hPP_S->GetXaxis()->GetNbins();
   const unsigned NumMultBins = hPP_S->GetYaxis()->GetNbins();
@@ -141,8 +148,8 @@ void Create_pL_Ck(){
   hRatio->Write();
 
   //at this point Laura will ask you for a plot where the correlation
-  //functions is 1 in some region. Lets pretend for us this is just above
-  //the cust, so 300-350 MeV. There is a solution for you
+  //function is 1 in some region. Lets pretend for us this is just above
+  //the cusp, so 300-350 MeV. There is a solution for you
   TH1F* hCk_tot_N = (TH1F*)hCk_tot->Clone("hCk_tot_N");
   TH1F* hCk_simple_N = (TH1F*)hCk_simple->Clone("hCk_simple_N");
 
@@ -158,12 +165,23 @@ void Create_pL_Ck(){
   hCk_simple_N->Scale(1./fNorm_simple->GetParameter(0));
   hCk_simple_N->Write();
 
+  TF1* fNorm_GF = new TF1("fNorm_GF","[0]",0.300,0.350);
+  fNorm_GF->SetParameter(0,1);
+  hGF->Fit(fNorm_GF,"S, N, R, M");
+  hGF->Scale(1./fNorm_GF->GetParameter(0));
+  hGF->Write();
+
+  TH1F* hRatioGF = (TH1F*)hCk_tot_N->Clone("hRatioGF");
+  hRatioGF->Divide(hGF);
+  hRatioGF->Write();
+
 
   delete hCk_tot;
   delete hCk_simple;
   delete hCk_tot_N;
   delete hCk_simple_N;
   delete hRatio;
+  delete hRatioGF;
   delete hSE_simple;
   delete hME_simple;
   delete fInput_PP_S;

@@ -2,7 +2,7 @@
 void FlatSpacialDisto(){
   //sample xyz
   //sample pT eta phi
-  const int Mode = 4;
+  const int Mode = 5;
   const unsigned NumIter = 1*1000*1000;
   const double Sigma = 1;
   const double Pi = TMath::Pi();
@@ -20,6 +20,7 @@ void FlatSpacialDisto(){
   TRandom3 rangen(11);
   for(unsigned uIter=0; uIter<NumIter; uIter++){
     if(Mode==0){
+      //x,y,z from Gauss, default choice
       px = rangen.Gaus(0,Sigma);
       py = rangen.Gaus(0,Sigma);
       pz = rangen.Gaus(0,Sigma);
@@ -50,6 +51,7 @@ void FlatSpacialDisto(){
 
     }
     else if(Mode==1){
+      //sample pT, cos_th, phi => not good
       cos_th = rangen.Uniform(-1,1);
       sin_th = sqrt(1.-cos_th*cos_th)+1e-128;
       tan_th = sin_th/cos_th;
@@ -67,7 +69,7 @@ void FlatSpacialDisto(){
     }
     //WORKS!!!
     else if(Mode==2){
-      //this is pt/sin_th
+      //sample pt,pz,phi => works
       pt = sqrt(pow(rangen.Gaus(0,Sigma),2.)+pow(rangen.Gaus(0,Sigma),2.));
       pz = rangen.Gaus(0,Sigma);
       tan_th = pt/pz;
@@ -83,6 +85,7 @@ void FlatSpacialDisto(){
     }
     //WORKS!!!
     else if(Mode==3){
+      //sample ptot,cos_th,phi => works
       cos_th = rangen.Uniform(-1,1);
       sin_th = sqrt(1.-cos_th*cos_th)+1e-128;
       tan_th = sin_th/cos_th;
@@ -98,10 +101,38 @@ void FlatSpacialDisto(){
       theta = acos(cos_th);
     }
     else if(Mode==4){
+      //pt,eta,phi => does not work
       pt = sqrt(pow(rangen.Gaus(0,Sigma),2.)+pow(rangen.Gaus(0,Sigma),2.));
       eta = rangen.Uniform(-1,1);
       //do eta = rangen.Gaus(0,2);
       //while(fabs(eta)>1.5);
+      phi = rangen.Uniform(0,2.*Pi);
+      sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
+      cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
+      cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
+      pz = pt*cotg_th;
+      ptot = sqrt(pt*pt+pz*pz);
+      px = ptot*cos(phi)*sin_th;
+      py = ptot*sin(phi)*sin_th;
+      theta = acos(cos_th);
+    }
+    //WORKS
+    else if(Mode==5){
+      //sample px,py,pz, but only evaluate pT and eta
+      //save the pT eta, sample random phi => we restore all correctly
+      //this mean, if we have a 2D pT vs eta, we can sample phi randomly
+      px = rangen.Gaus(0,Sigma);
+      py = rangen.Gaus(0,Sigma);
+      pz = rangen.Gaus(0,Sigma);
+      ptot = sqrt(px*px+py*py+pz*pz);
+      pt = sqrt(px*px+py*py);
+      cos_th = pz/ptot;
+      theta = acos(cos_th);
+      phi = atan2(py,px)+Pi;
+      eta = -log(tan(0.5*theta));
+
+      //now we reset the true solution, keeping the info on pT and eta
+      //phi is resampled
       phi = rangen.Uniform(0,2.*Pi);
       sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
       cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
