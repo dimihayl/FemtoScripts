@@ -1,4 +1,6 @@
 R__ADD_LIBRARY_PATH("/home/dimihayl/Apps/CATS3/lib/");
+//R__ADD_LIBRARY_PATH("/usr/local/include/gsl/");
+//R__ADD_LIBRARY_PATH("/usr/local/lib/");
 R__LOAD_LIBRARY(libCATSbasic.so);
 R__LOAD_LIBRARY(libCATSdev.so);
 R__LOAD_LIBRARY(libCATSextended.so);
@@ -9,7 +11,13 @@ R__LOAD_LIBRARY(libCATSextended.so);
 #include "/home/dimihayl/Apps/CATS3/include/CommonAnaFunctions.h"
 #include "/home/dimihayl/Apps/CATS3/include/DLM_Histo.h"
 #include "/home/dimihayl/Apps/CATS3/include/DLM_RootFit.h"
+#include "/home/dimihayl/Apps/CATS3/include/DLM_Potentials.h"
+#include "/usr/local/include/gsl/gsl_sf_dawson.h"
 
+
+
+//SET(GSL_INCLUDE "/usr/local/include/gsl")#where are all GSL related .h files
+//SET(GSL_LIB "/usr/local/lib")#where are the GSL .a and .so files
 
 int Get_MMclass(const double& r0, const double& f0, const double& d0){
   //f0>0
@@ -1009,8 +1017,204 @@ const bool DEBUG = false;
   delete [] MomBins;
 }
 
+void Example_ProfS(int flag){
+  printf("Make a potential %i\n",flag);
+  double V1,V2,mu1,mu2;
+  //ManufactureYukawaPotential(0.5,0.0025,1,0.005,V1,mu1,V2,mu2);
+  //ManufactureYukawaPotential(0.5,0.0025,2,0.005*2,V1,mu1,V2,mu2);
+  //ManufactureYukawaPotential(0.5,0.0025,4,0.005*4,V1,mu1,V2,mu2);
+  //ManufactureYukawaPotential(0.5,0.0025,8,0.005*8,V1,mu1,V2,mu2);
+
+//make the dist and fluct refer to d0 and f0 separately, check if the parametes get closer
+//to their goal (not only distance, but direction...)
+
+  unsigned NumR=16;
+  double Radii[NumR];
+
+  //NumR=8;
+  //Radii[0] = 0.9;Radii[1] = 1.1;Radii[2] = 1.3;Radii[3] = 1.5;
+  //Radii[4] = 2.0;Radii[5] = 2.5;Radii[6] = 3.0;Radii[7] = 4.0;
+
+  NumR=1;
+  Radii[0]=1.08;Radii[1]=1.08*2;Radii[2]=1.08*4;
+
+  double f0,d0;
+  double ef0 = 0.005;
+  double ed0 = 0.005;
+//NumR=1; f0=25.00; d0=25.00; ManufacturePotential(f0,f0*ef0,d0,d0*ed0,Radii,NumR,V1,mu1,V2,mu2,"Dynamic");
+//return;
+
+  //ADD-ONS FOR EACH FLAG
+  TString OutputFolder = TString::Format("./ManufacturedPotentials");
+  //flag = last digit is for the potential 0 - dynamic, 1 - DoubleGaussSum, 2 - YukawaDimiCore, 3 - Gaussian, 4 - Yukawa
+  TString Potential = "Dynamic";
+  if(flag%10==1) Potential = "DoubleGaussSum";
+  else if(flag%10==2) Potential = "YukawaDimiCore";
+  else if(flag%10==3) Potential = "Gaussian";
+  else if(flag%10==4) Potential = "Yukawa";
+
+//for Prof. S 50X, 51X....
+// 50X,51X - doublet potentials
+// 52X,53,54X - quarted potentials, if other -> perform all of them
+// the 1XXX are for systematics
+// e.g. for the flag 50X, systematics are 150X, 160X, 170X, 180X,
+// for flag 51X we will have 151X, 161X, 171X, 181X etc.
+  ef0 = 0.1/10.;
+  ed0 = 0.05/5.;
+  NumR = 1;
+  Radii[0] = 1.2;
+  //OutputFolder += "ProfS/";
+  int VAR_FLAG = (flag/10)%10;
+  if(flag/10>=150){
+    VAR_FLAG += (flag/100)*10;//+150,160,170,180
+  }
+  //for(unsigned uVar=0; uVar<5; uVar++){
+    //if(VAR_FLAG<5&&uVar!=VAR_FLAG) continue;
+    switch (VAR_FLAG) {
+      case 0: f0=-16.8; d0 = 2.3; break;
+      case 150: f0=-21.2; d0 = 2.3; break;
+      case 160: f0=-14.4; d0 = 2.3; break;
+      case 170: f0=-16.8; d0 = 2.6; break;
+      case 180: f0=-16.8; d0 = 2.0; break;
+      case 1: f0=-16.3; d0 = 3.2; break;
+      case 2: f0=7.6; d0 = 3.6; break;
+      case 3: f0=10.8; d0 = 3.8; break;
+      case 4: f0=17.3; d0 = 3.6; break;
+      default: printf("Weird flags for producing the potentials for Prof. S.\n"); return;
+    }
+    double StartPars[5];
+    double FT = 1;
+
+    if(Potential=="DoubleGaussSum"){
+      //this does not work, ones you have result for uVar==1, plug in those here
+      if(VAR_FLAG==0){
+        //StartPars[0]=-8.999757e+02;
+        //StartPars[1]=5.081559e-01;
+        //StartPars[2]= -4.021392e+02;
+        //StartPars[3]=1.019864e+00;
+        //StartPars[4]=0;
+        //StartPars[0]=-1.943168e+02;
+        //StartPars[1]=1.372106e+00;
+        //StartPars[2]= 3.646892e+02;
+        //StartPars[3]=9.833930e-01;
+        //StartPars[4]=0;
+        //StartPars[0]=-1.455808e+02;//V1 (MeV)
+        //StartPars[1]=1.165081e+00;//mu1 (fm)
+        //StartPars[2]=3.700546e+02;//V2 (MeV)
+        //StartPars[3]=6.652901e-01;//mu2 (fm)
+        StartPars[0]=1.666386e+02;//V1 (MeV)
+        StartPars[1]=9.827926e-01;//mu1 (fm)
+        StartPars[2]=-7.677560e+02;//V2 (MeV)
+        StartPars[3]=9.310511e-01;//mu2 (fm)
+        StartPars[4]=0;
+      }
+      else if(VAR_FLAG==150){
+        StartPars[0]=-1.454633e+02;
+        StartPars[1]=1.156062e+00;
+        StartPars[2]=3.649164e+02;
+        StartPars[3]=6.643602e-01;
+        StartPars[4]=0;
+        FT = 1./128.;
+//        Make a potential 1501
+//         Goal: DoubleGaussSum (f0,d0) [Achieved]: (-21.200,2.300)+/-(0.010,0.010) [ 38%,251%], Break (   97/10000) stuck, but working on it...
+//        Suitable DoubleGaussSum potential found:.1559e+00  V2=3.6454e+02  mu2=6.6436e-01 <--> f0=-21.174  d0=2.304
+//         f0 = -21.197 fm
+//         d0 = 2.30 fm
+//          V1 = -1.454633e+02
+//          mu1 = 1.156062e+00
+//          V2 = 3.649164e+02
+//          mu2 = 6.643602e-01
+
+
+      }
+      else if(VAR_FLAG==160){
+        StartPars[0]=-1.406252e+02;
+        StartPars[1]=1.183071e+00;
+        StartPars[2]=3.671337e+02;
+        StartPars[3]=6.646221e-01;
+        StartPars[4]=0;
+        FT = 1./1024.;
+        // Current solution: V1=-1.4051e+02  mu1=1.1833e+00  V2=3.6563e+02  mu2=6.6525e-01 <--> f0=-14.397  d0=2.289
+      }
+      else if(VAR_FLAG==170){
+        StartPars[0]=-1.442826e+02;
+        StartPars[1]=1.251641e+00;
+        StartPars[2]=3.755765e+02;
+        StartPars[3]=7.397668e-01;
+        StartPars[4]=0;
+        FT = 1./256.;
+        //ef0 = 1.0;
+
+  //      Make a potential 1701
+  //       Goal: DoubleGaussSum (f0,d0) [Achieved]: (-16.800,2.600)+/-(0.010,0.010) [ 15%,139%], Break (   89/10000) stuck, but working on it...
+  //      Suitable DoubleGaussSum potential found:.2535e+00  V2=3.7566e+02  mu2=7.4164e-01 <--> f0=-16.867  d0=2.593
+  //       f0 = -16.801 fm
+  //       d0 = 2.59 fm
+  //        V1 = -1.446716e+02
+  //        mu1 = 1.253497e+00
+  //        V2 = 3.756614e+02
+  //        mu2 = 7.415382e-01
+
+      }
+      else if(VAR_FLAG==180){
+        StartPars[0]=-1.420678e+02;
+        StartPars[1]=1.081553e+00;
+        StartPars[2]=3.579042e+02;
+        StartPars[3]=5.812257e-01;
+        StartPars[4]=0;
+        FT = 1./2048.;
+        //ef0 = 1.0;
+      }
+      else if(VAR_FLAG==1){
+        //StartPars[0]=-8.999757e+02;
+        //StartPars[1]=5.081559e-01;
+        //StartPars[2]= -4.021392e+02;
+        //StartPars[3]=1.019864e+00;
+        //StartPars[4]=0;
+        StartPars[0]=-1.707025e+02;
+        StartPars[1]=1.495874e+00;
+        StartPars[2]= 3.626808e+02;
+        StartPars[3]=9.711152e-01;
+        StartPars[4]=0;
+      }
+      else if(VAR_FLAG==2){
+        StartPars[0]=-1.008636e+01;
+        StartPars[1]=1.348757e+00;
+        StartPars[2]= -1.410447e+01;
+        StartPars[3]=2.147635e+00;
+        StartPars[4]=0;
+      }
+      else if(VAR_FLAG==3){
+        StartPars[0]=-4.867921e+02;
+        StartPars[1]=1.175196e+00;
+        StartPars[2]= -8.110269e+02;
+        StartPars[3]=1.169148e-01;
+        StartPars[4]=0;
+      }
+      else{
+        StartPars[0]=-4.940004e+02;
+        StartPars[1]=1.177133e+00;
+        StartPars[2]= -8.133919e+02;
+        StartPars[3]=1.007169e-01;
+        StartPars[4]=0;
+      }
+      //if(uVar==1) ManufacturePotential(f0,ef0,d0,ed0,Radii,NumR,V1,mu1,V2,mu2,Potential,OutputFolder,11,StartPars);
+      //else ManufacturePotential(f0,ef0,d0,ed0,Radii,NumR,V1,mu1,V2,mu2,Potential,OutputFolder);
+      FT = 1./10.;
+      ef0 = 0.5;
+      ed0 = 0.1;
+      ManufacturePotential(f0,ef0,d0,ed0,Radii,NumR,V1,mu1,V2,mu2,Potential,OutputFolder,11,StartPars,
+        (Mass_L*Mass_d)/(Mass_L+Mass_d),FT);
+
+    }
+    else{
+      ManufacturePotential(f0,ef0,d0,ed0,Radii,NumR,V1,mu1,V2,mu2,Potential,OutputFolder,11,NULL,
+        (Mass_L*Mass_d)/(Mass_L+Mass_d),FT);
+    }
+}
 
 
 void ScatteringPars(){
   printf("hello\n");
+  Example_ProfS(501);
 }
