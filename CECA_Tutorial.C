@@ -14,6 +14,7 @@ R__LOAD_LIBRARY(libCATSextended.so);
 #include "/home/dimihayl/Apps/CATS3/include/DLM_Potentials.h"
 #include "/home/dimihayl/Apps/CATS3/include/CECA.h"
 #include "/home/dimihayl/Apps/CATS3/include/TREPNI.h"
+#include "/home/dimihayl/Apps/CATS3/include/DLM_RootWrapper.h"
 #include "/usr/local/include/gsl/gsl_sf_dawson.h"
 
 
@@ -98,6 +99,129 @@ void Test1(){
   printf("Database QA: %i\n",database_qa);
 
 }
+
+void Test2(){
+
+  std::vector<std::string> ListOfParticles;
+  ListOfParticles.push_back("Proton");
+  //ListOfParticles.push_back("Proton");
+  ListOfParticles.push_back("Lambda");
+
+  printf("Running for %s-%s pairs\n",ListOfParticles.at(0).c_str(),ListOfParticles.at(1).c_str());
+
+  const double Disp = 1.0;
+
+  const double FracProtonReso = 0.6422*1;
+  const double FracLambdaReso = 0.6438*0;
+
+  const double Tau_ProtonReso = 1.65;
+  const double Tau_LambdaReso = 4.69;//4.69
+
+  const double Mass_ProtonReso = 1362;
+  const double Mass_LambdaReso = 1462;
+
+  TREPNI Database(0);
+  Database.SetSeed(11);
+  std::vector<TreParticle*> ParticleList;
+  ParticleList.push_back(Database.NewParticle("Proton"));
+  ParticleList.push_back(Database.NewParticle("Lambda"));
+  ParticleList.push_back(Database.NewParticle("Pion"));
+  ParticleList.push_back(Database.NewParticle("ProtonReso"));
+  ParticleList.push_back(Database.NewParticle("LambdaReso"));
+
+  double ExpectedPP,ExpectedPR,ExpectedRP,ExpectedRR;
+  ExpectedPP = (1.-FracProtonReso)*(1.-FracLambdaReso);
+  ExpectedPR = (1.-FracProtonReso)*FracLambdaReso;
+  ExpectedRP = FracProtonReso*(1.-FracLambdaReso);
+  ExpectedRR = FracProtonReso*FracLambdaReso;
+
+  for(TreParticle* prt : ParticleList){
+    if(prt->GetName()=="Proton"){
+      prt->SetMass(Mass_p);
+      prt->SetAbundance((1.-FracProtonReso));
+    }
+    else if(prt->GetName()=="Lambda"){
+      prt->SetMass(Mass_L);
+      prt->SetAbundance((1.-FracLambdaReso));
+      prt->SetDelayTau(30);
+    }
+    else if(prt->GetName()=="Pion"){
+      prt->SetMass(Mass_pic);
+      prt->SetAbundance(0);
+    }
+    else if(prt->GetName()=="ProtonReso"){
+      prt->SetMass(Mass_ProtonReso);
+      prt->SetAbundance(FracProtonReso);
+      prt->SetWidth(hbarc/Tau_ProtonReso);
+
+      prt->NewDecay();
+      prt->GetDecay(0)->AddDaughter(*Database.GetParticle("Proton"));
+      prt->GetDecay(0)->AddDaughter(*Database.GetParticle("Pion"));
+      prt->GetDecay(0)->SetBranching(100);
+    }
+    else if(prt->GetName()=="LambdaReso"){
+      prt->SetMass(Mass_LambdaReso);
+      prt->SetAbundance(FracLambdaReso);
+      prt->SetWidth(hbarc/Tau_LambdaReso);
+
+      prt->NewDecay();
+      prt->GetDecay(0)->AddDaughter(*Database.GetParticle("Lambda"));
+      prt->GetDecay(0)->AddDaughter(*Database.GetParticle("Pion"));
+      prt->GetDecay(0)->SetBranching(100);
+    }
+
+    prt->SetPtPz(prt->GetMass()*0.8,500);
+    //prt->SetAcceptance_Eta(-EtaCut,EtaCut);
+    //prt->SetAcceptance_pT(500,1e6);
+  }
+
+
+  CECA Ivana(Database,ListOfParticles);
+  Ivana.SetDisplacement(Disp);
+  Ivana.SetHadronization(0);
+  Ivana.SetTau(0);
+  Ivana.SetEventMult(2);
+  Ivana.SetSourceDim(2);
+  Ivana.SetThreadTimeout(30);
+  Ivana.SetFemtoRegion(200);
+  Ivana.SetPropagateMother(false);
+  Ivana.GHETTO_EVENT = true;
+  Ivana.GoBabyGo(0);
+
+  TFile fOutput(TString::Format("Putka_%s_%s_d%.2f_fp%.2f_fl%.2f.root",ListOfParticles.at(0).c_str(),ListOfParticles.at(1).c_str(),Disp,FracProtonReso,FracLambdaReso),"recreate");
+  Ivana.GhettoFemto_rstar->ComputeError();
+  TH1F* h_rstar_Ceca = Convert_DlmHisto_TH1F(Ivana.GhettoFemto_rstar,"h_rstar_Ceca");
+  h_rstar_Ceca->Scale(1./h_rstar_Ceca->Integral(),"width");
+  fOutput.cd();
+  h_rstar_Ceca->Write();
+
+  //TF1* f_reff;
+  double reff = Get_reff(h_rstar_Ceca);
+  //f_reff->Write();
+  printf("reff = %.3f fm\n",reff);
+
+  Ivana.GhettoFemto_mT_rstar->ComputeError();
+  TH2F* h_mT_rstar = Convert_DlmHisto_TH2F(Ivana.GhettoFemto_mT_rstar,"h_mT_rstar");
+  h_mT_rstar->Scale(1./h_mT_rstar->Integral(),"width");
+  fOutput.cd();
+  h_mT_rstar->Write();
+
+  Ivana.GhettoFemto_mT_rcore->ComputeError();
+  TH2F* h_mT_rcore = Convert_DlmHisto_TH2F(Ivana.GhettoFemto_mT_rcore,"h_mT_rcore");
+  h_mT_rcore->Scale(1./h_mT_rcore->Integral(),"width");
+  fOutput.cd();
+  h_mT_rcore->Write();
+
+  Ivana.Ghetto_kstar_rstar->ComputeError();
+  TH2F* h_kstar_rstar = Convert_DlmHisto_TH2F(Ivana.Ghetto_kstar_rstar,"h_kstar_rstar");
+  fOutput.cd();
+  h_kstar_rstar->Write();
+
+
+
+}
+
 void CECA_Tutorial(){
-  Test1();
+  //Test1();
+  Test2();
 }
