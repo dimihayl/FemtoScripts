@@ -67,7 +67,7 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 	else{
 		return NULL;
 	}
-
+//printf("0\n");
 	//const double NormMin=600;
 	//const double NormMax=900;
 	//const double NormMin=0;
@@ -100,7 +100,7 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 	TH1F* hME_SUM;
 	TH1F* hCk_SUM;
 
-
+//printf("1\n");
 	TH2F* hSEmult_PP;
 	TH2F* hMEmult_PP;
 	TH2F* hSEmult_APAP;
@@ -120,14 +120,18 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 	TH1F* hMEmult1D_APAP = new TH1F();
 	TH1F* hSEmult1D_SUM = new TH1F();
 	TH1F* hMEmult1D_SUM = new TH1F();
-
+//printf("1a\n");
 	//read file
     TFile* InputFile = new TFile(NameInputFolder+NameInputFile,"read");
     TDirectoryFile* dInput = (TDirectoryFile*)(InputFile->FindObjectAny(NameList));
     TList* lInput1 = NULL;
+//InputFile->ls();
+//printf("1b %p -- %s\n",dInput,NameList.Data());
     dInput->GetObject(NameList,lInput1);
+  //printf("1c\n");
     TList* lInputPP = (TList*)lInput1->FindObject(NamePP);
     TList* lInputAPAP = (TList*)lInput1->FindObject(NameAPAP);
+
     hInSE_PP = (TH1F*)lInputPP->FindObject(TString::Format("SEDist_%s",NamePP.Data()));
     hInME_PP = (TH1F*)lInputPP->FindObject(TString::Format("MEDist_%s",NamePP.Data()));
     hInSE_APAP = (TH1F*)lInputAPAP->FindObject(TString::Format("SEDist_%s",NameAPAP.Data()));
@@ -141,7 +145,8 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 //printf("BE10 = %f\n",hInSE_PP->GetBinError(20));
     hInSE_PP->Rebin(uReb);//123 456 789 101112 131415 161718 192021
 //printf(" BE10 = %f\n",hInSE_PP->GetBinError(7));
-    hInSE_PP->Scale(1./double(uReb));
+//BUG BUG BUG
+    //hInSE_PP->Scale(1./double(uReb));
 //printf("  BE10 = %f\n",hInSE_PP->GetBinError(7));
 
 //usleep(1000e3);
@@ -173,7 +178,7 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
     hInMEmult_APAP->Sumw2();
     hInMEmult_APAP->Rebin2D(uReb,1);
     //hInMEmult_APAP->Scale(1./double(uReb));
-
+printf("2\n");
 	//copy
 	hSE_PP[0] = new TH1F(	"hSE_PP_Raw","hSE_PP_Raw",
 							hInSE_PP->GetNbinsX(),
@@ -202,7 +207,7 @@ TDirectory* WorkHorse(unsigned uReb, TString Correlation,
 	hME_PP[1]->Sumw2();
 	hME_PP[2]->Sumw2();
 
-
+printf("3\n");
 	hSE_APAP[0] = new TH1F(	"hSE_APAP_Raw","hSE_APAP_Raw",
 							hInSE_APAP->GetNbinsX(),
 							hInSE_APAP->GetBinLowEdge(1)*1000.,
@@ -798,6 +803,7 @@ void Vale1_Main(TString Correlation, TString NameOutputFolder,TString NameOutput
 		if(uReb==NumReb-1 && NumReb>=6) uReb = 9;
 		dOutput[uReb] = WorkHorse(uReb+1,Correlation,OutputFile,
 						NameInputFolder,NameInputFile,NameList,NormMin,NormMax);
+    //printf("DONE\n");
 		dOutput[uReb]->ls();
 		OutputFile->cd();
 		dOutput[uReb]->Write();
@@ -917,6 +923,56 @@ void CutVariations_Signal_2(){
 		Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
 				NameInputFolder,NameInputFile,NameList);
 		NameOutputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/DimiJun20/Norm240_340/DataSignal/";
+		Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
+				NameInputFolder,NameInputFile,NameList,240,340);
+	}
+}
+
+//pair cleaner AnalysisResults_CPAtest
+//mode == 0 is the original data
+//mode == 1 is the Bhawani rerun w/o any changes (so should be == to 0)
+//mode == 2 is the new pair cleaner
+void CutVariations_Signal_2_PCT(const int Mode){
+
+	TString Correlation = "pL";
+	TString NameInputFile;
+  if(Mode==0) NameInputFile = "AnalysisResults.root";
+  else if(Mode==1) NameInputFile = "AnalysisResultsORIG.root";
+  else if(Mode==2) NameInputFile = "AnalysisResultsNEW.root";
+  else {printf("Mode!!!!!!!!!!!!!!!!!!!!!!!!\n"); return;}
+	const unsigned NumVars = 1;//45
+	for(unsigned uVar=0; uVar<NumVars; uVar++){
+		TString NameInputFolder;
+		TString NameOutputFile;
+		TString NameList;
+		TString NameOutputFolder;
+		if(!uVar){
+      if(Mode==0){
+        NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample10HM/";
+        NameList = "HMResults";
+      }
+			else{
+        NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/PCT_2022/";
+        NameList = TString::Format("HMDimiResultsS4_0_0");
+      }
+
+			//NameOutputFile = TString::Format("Ck_pL_%u.root",uVar);
+			NameOutputFile = TString::Format("CkREW_pL_%u.root",uVar);
+
+		}
+		else{
+      NameOutputFile = TString::Format("CkREW_pL_%u.root",uVar);
+      if(Mode==0){
+        NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/Sample12HM/";
+        NameList = TString::Format("HMResults%u",uVar);
+      }
+      else{
+        NameInputFolder = "/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/PCT_2022/";
+        NameList = TString::Format("HMDimiResultsS4_0_0");
+      }
+
+		}
+		NameOutputFolder = TString::Format("/home/dimihayl/CernBox/Sync/CatsFiles/ExpData/ALICE_pp_13TeV_HM/PCT_2022/Mode%i/",Mode);
 		Vale1_Main(Correlation,NameOutputFolder,NameOutputFile,
 				NameInputFolder,NameInputFile,NameList,240,340);
 	}
@@ -1244,11 +1300,15 @@ void CreateCk_from_FemtoDeam(){
 	//Vale1_SR6();//1124-1135 ANplot
 
 	//CutVariations_Signal();
+  //I believe this is the final word for what was publ (not 100% sure though)
   //CutVariations_Signal_2();
   //Study_CPA();
   //Study_V0d("S2p5");
   //Study_V0d("S4");
-  BabyLaura();
+  //BabyLaura();
+  CutVariations_Signal_2_PCT(0);
+  //CutVariations_Signal_2_PCT(1);
+  //CutVariations_Signal_2_PCT(2);
 
 	//CompareDataMC();
 
