@@ -1306,8 +1306,8 @@ void CreateCk_from_FemtoDeam(){
   //Study_V0d("S2p5");
   //Study_V0d("S4");
   //BabyLaura();
-  CutVariations_Signal_2_PCT(0);
-  //CutVariations_Signal_2_PCT(1);
+  //CutVariations_Signal_2_PCT(0);
+  CutVariations_Signal_2_PCT(1);
   //CutVariations_Signal_2_PCT(2);
 
 	//CompareDataMC();
